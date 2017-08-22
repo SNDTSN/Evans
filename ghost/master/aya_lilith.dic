@@ -1,0 +1,2712 @@
+/*---------------------------------------------------------------------
+	간단 아야 스크립트 「아야리리스」
+---------------------------------------------------------------------*/
+//***************************************************************************************************
+OnSystemLoad.ﾟAYALILITH : void //ﾟ는 소트 순서를 제일 마지막으로 미루기 위해서
+{
+	stroke = (1,1,1)
+	stroketimer = (1,1,1)
+	strokeid = ('','','')
+	half_menu_counter = 0
+	boot_init = 0
+	
+	mikire_flag_array = IARRAY
+	
+	최종마우스이벤트분 = systemuptime / 60
+	고스트기동시각 = systemuptime
+	
+	누적기동시간초기 = 누적기동시간
+	
+	if ISVAR('반쪽메뉴무효') == 0 {
+		반쪽메뉴무효 = 0
+	}
+	
+	_a = GETFUNCLIST('고스트기동전의처리')
+	foreach _a;_f {
+		EVAL(_f)
+	}
+	
+	if username == '' {
+		username = 이름입력초기WRAP()
+	}
+	
+	mousedown_time = -1
+	mousedown_reference_array = IARRAY
+	mousedown_exec_complete = 0
+	
+	mouseevent_time = IARRAY
+	mouseevent_colname = IARRAY
+	mouseevent_count = IARRAY
+	마우스이벤트연속횟수 = 1
+	
+	갈아입히기정보 = IARRAY
+	갈아입히기유효파츠리스트 = IARRAY
+	갈아입히기유효파츠리스트EX = IARRAY
+	갈아입히기유효카테고리리스트 = IARRAY
+	갈아입히기유효카테고리리스트EX = IARRAY
+	
+	모드 = ''
+	오늘날짜 = GETTIME()[2]
+	
+	_ft = <<'
+	OnChoiceSelect
+	OnAnchorSelect
+	OnBoot
+	OnClose
+	OnFirstBoot
+	OnGhostChanging
+	OnGhostChanged
+	OnGhostCalling
+	OnGhostCalled
+	OnGhostCallComplete
+	OnOtherGhostClosed
+	OnShellChanging
+	OnShellChanged
+	OnMinuteChange
+	OnOffScreen
+	OnBalloonChange
+	OnMouseMove
+	OnMouseWheel
+	OnMouseClick
+	OnMouseDoubleClick
+	OnMouseDragStart
+	OnMouseDragEnd
+	OnMouseGesture
+	OnMouseDown
+	OnMouseUp
+	OnCommunicate
+	OnRecommendsiteChoice
+	OnKeyPress
+	OnChoiceTimeout
+	OnBalloonTimeout
+	OnBalloonBreak
+	OnSSTPBreak
+	OnBalloonClose
+	On_otherghostname
+	On_sakura.portalsites
+	On_sakura.recommendsites
+	On_kero.recommendsites
+	'>>
+	_fa = SPLIT(_ft,CHR(0xd,0xa))
+	
+	foreach _fa;_f {
+		if ISFUNC(_f) {
+			LOGGING("경고 : 함수/이벤트 %(_f) 은/는 아야리리스로 덮어씌어집니다")
+		}
+	}
+}
+
+OnSystemUnload.ﾟAYALILITH : void //ﾟ는 소트 순서를 제일 마지막으로 미루기 위해서
+{
+	ERASEVAR('누적기동시간초기')
+	
+	ERASEVAR('stroke','stroketimer','strokeid')
+	ERASEVAR('half_menu_counter')
+	ERASEVAR('boot_init')
+	
+	ERASEVAR('mikire_flag_array')
+	
+	ERASEVAR('최종마우스이벤트분')
+	ERASEVAR('고스트기동시각')
+	ERASEVAR('태그없는토크')
+	ERASEVAR('종료안함')
+	
+	ERASEVAR('installedplugin_name','installedplugin_id')
+	ERASEVAR('ghostexlist')
+	
+	ERASEVAR('mousedown_reference_array','mousedown_time','mousedown_exec_complete')
+	ERASEVAR('mouseevent_time''mouseevent_colname','mouseevent_count','마우스이벤트연속횟수','클릭연속횟수')
+	
+	//'정보_쉘이름','정보_말풍선이름'은 지우지 않음
+	ERASEVAR('정보_고스트이름','정보_캐릭터이름')
+	
+	ERASEVAR('정보_사용자이름','정보_사용자생일')
+
+	ERASEVAR('정보_모니터색수','정보_모니터폭','정보_모니터높이')
+	
+	ERASEVAR('스탬프수첩동작','스탬프수첩정보')
+	
+	ERASEVAR('이름입력식별')
+	
+	ERASEVAR('갈아입히기정보','갈아입히기유효파츠리스트','갈아입히기유효파츠리스트EX','갈아입히기유효카테고리리스트','갈아입히기유효카테고리리스트EX')
+	
+	ERASEVAR('오늘은사용자생일','오늘날짜')
+
+	_a = GETFUNCLIST('고스트종료전의처리')
+	foreach _a;_f {
+		EVAL(_f)
+	}
+}
+
+OnTranslateInternal.ﾟAYALILITH //ﾟ는 소트 순서를 제일 마지막으로 미루기 위해서
+{
+	if SUBSTR(SHIORI3FW.Eventid,0,3) == 'On_' {
+		_argv[0] //ret
+		return
+	}
+	
+	if ! boot_init {
+		if ISFUNC('기동초기화스크립트') {
+			_v = REPLACE(EVAL('기동초기화스크립트'),'\e','')
+			_v + _argv[0] //ret
+		}
+		else {
+			_argv[0] //ret
+		}
+		boot_init = 1
+	}
+	else {
+		_argv[0] //ret
+	}
+}
+
+AYL_OnTextDrop
+{
+	if TOINT(AYALilithEX) != 0 {
+		REPLACE(reference.raw[0],CHR(1),CHR(0xd,0xa))
+	}
+	else {
+		REPLACE(reference.raw[0],CHR(1),' ')
+	}
+}
+
+누적기동시간
+{
+	ghostupmin_total() / 24
+}
+
+AYL_OnSecondChange
+{
+	_mikire = TOINT(reference[1])
+	if _mikire != TOINT(mikire_flag_array[0]) {
+		mikire_flag_array[0] = _mikire
+		
+		_fname = ''
+		if _mikire {
+			_fname = OnGhostEventTranslate.AYL('화면잘림0')
+		}
+		else {
+			_fname = OnGhostEventTranslate.AYL('화면잘림해제0')
+		}
+		if ISFUNC(_fname) {
+			_v = EVAL(_fname)
+			if STRLEN(_v) {
+				_v
+				return
+			}
+		}
+	}
+	
+	//홀드
+	if ARRAYSIZE(mousedown_reference_array) && (mousedown_exec_complete == 0) {
+		if (GETTICKCOUNT() - mousedown_time) > 1000 {
+			//일단 reference를 임시 저장하고 유사 마우스 이벤트에 (MouseDown의 reference를 덮어쓰기)
+			_r = reference
+			reference = mousedown_reference_array
+			
+			mousedown_exec_complete = 1
+			
+			_result = MouseEventExec('홀드')
+			if STRLEN(_result) {
+				_result
+				return
+			}
+			
+			reference = _r
+		}
+	}
+	
+	_fname = 'OnSecondChange' + TOSTR(모드)
+	if ISFUNC(_fname) {
+		EVAL(_fname)
+		return
+	}
+}
+
+AYL_OnOffScreen
+{
+	_mikire_after = IARRAY
+	
+	_fa = SPLIT(reference[0],CHR(1))
+	foreach _fa;_f {
+		_mikire_after[TOINT(_f)] = 1
+	}
+	
+	_n = ARRAYSIZE(mikire_flag_array)
+	_n2 = ARRAYSIZE(_mikire_after)
+	if _n < _n2 {
+		_n = _n2
+	}
+	
+	for _i = 0 ; _i < _n ; _i++ {
+		if mikire_flag_array[_i] != _mikire_after[_i] {
+			_fname = ''
+			if _mikire_after[_i] {
+				_fname = OnGhostEventTranslate.AYL('화면잘림' + _i)
+			}
+			else {
+				_fname = OnGhostEventTranslate.AYL('화면잘림해제' + _i)
+			}
+			if ISFUNC(_fname) {
+				_v = EVAL(_fname)
+				if STRLEN(_v) {
+					_v
+					return
+				}
+			}
+			return
+		}
+	}
+	
+	mikire_flag_array = _mikire_after
+}
+
+AYL_OnKeyPress
+{
+	_fname = ''
+	if TOINT(reference[2]) >= 2 {
+		_fname = OnGhostEventTranslate.AYL('키입력연속' + TOUPPER(reference[0]))
+	}
+	else {
+		_fname = OnGhostEventTranslate.AYL('키입력' + TOUPPER(reference[0]))
+	}
+	if ISFUNC(_fname) {
+		_v = EVAL(_fname)
+		if STRLEN(_v) {
+			_v
+			return
+		}
+	}
+	
+	if TOLOWER(reference[0]) == 'd' {
+		if 'shift' _in_ reference[4] {
+			AYLXX_Debug_Menu_Exec
+		}
+	}
+}
+
+AYLXX_Debug_Menu_Exec
+{
+	"\0"
+	--
+	메뉴('교대 리스트를 내보내기','OnAYLXXDebugWriteChangeList') + '\n'
+	--
+	메뉴('AYA 명령 직접 실행','OnAYLXX_DEBUG_EXEC') + '\n\n[half]'
+	--
+	메뉴('닫기','script:\b[-1]')
+}
+
+OnAYLXXDebugWriteChangeList
+{
+	_a = GETFUNCLIST()
+	_x = RE_ASEARCHEX('(?<!자신)(?<!다른고스트)(?<!그외)으로바꾸기$',_a)
+	
+	ayl_gn_list = IARRAY
+	
+	_n = ARRAYSIZE(_x)
+	if _n == 0 {
+		'\0교대 없음'
+		return
+	}
+	
+	for _i = 0 ; _i < _n ; _i++ {
+		_fn = _a[_x[_i]]
+		_fn = RE_REPLACE(_fn,'으로바꾸기$','')
+		_fn = RE_REPLACE(_fn,'^＊','')
+		ayl_gn_list ,= _fn
+	}
+	
+	ayl_gn_from = IARRAY
+	for _i = 0 ; _i < _n ; _i++ {
+		_fn = ayl_gn_list[_i] + '에서바뀜'
+		ayl_gn_from[_i] = ( STRLEN(GhostEventSearch(_fn)) > 0 )
+	}
+	
+	_scr1 = '\![get,property,OnAYLXXWriteChangeList2'
+	_scr2 = '\![get,property,OnAYLXXWriteChangeList3'
+	_scr3 = '\![get,property,OnAYLXXWriteChangeList4'
+	
+	for _i = 0 ; _i < _n ; _i++ {
+		_scr1 += ',' + 이스케이프('ghostlist(' + ayl_gn_list[_i] + ').name')
+		_scr2 += ',' + 이스케이프('ghostlist(' + ayl_gn_list[_i] + ').craftmanurl')
+		_scr3 += ',' + 이스케이프('ghostlist(' + ayl_gn_list[_i] + ').sakuraname')
+	}
+	
+	_scr1 += ']'
+	_scr2 += ']'
+	_scr3 += ']'
+	
+	_scr1 + _scr2 + _scr3
+}
+
+OnAYLXXWriteChangeList2
+{
+	ayl_sakuraname_list = reference
+}
+
+OnAYLXXWriteChangeList3
+{
+	ayl_crafturl_list = reference
+}
+
+OnAYLXXWriteChangeList4
+{
+	void RE_SEARCH(GETSETTING('coreinfo.path'),'\\([^\\]+)\\ghost\\master\\')
+	_folder_name = RE_GETSTR()[1]
+	
+	_fullname = reference
+	
+	void MKDIR('var')
+	
+	_filename = "var/%(_folder_name)_change_list.txt"
+	
+	void FCHARSET(1)
+	
+	void FOPEN(_filename,'w')
+	
+	_q = '"'
+
+	_gt = GETTIME()
+	_s = STRFORM('$04d/$02d/$02d $02d:$02d:$02d',_gt[0],_gt[1],_gt[2],_gt[4],_gt[5],_gt[6])
+	
+	void FWRITE(_filename,"<p class=%(_q)ghostchange%(_q)>%(_s)현재의 교대 리스트</p><br />이 리스트는 고스트 템플레이트 <a href=%(_q)http://ms.shillest.net/yayalilith.xhtml%(_q)>「아야리리스」</a>의 개발용 기능으로 자동 생성되었습니다.</p>")
+	void FWRITE(_filename,"<table class=%(_q)ghostchange%(_q)><tbody><tr><th>고스트이름</th><th>상태</th></tr>")
+	
+	_n = ARRAYSIZE(ayl_gn_list)
+	for _i = 0 ; _i < _n ; _i++ {
+		_gnm = ayl_gn_list[_i]
+		if STRLEN(_fullname[_i]) {
+			_gnm = "%(_fullname[_i]) (%(ayl_sakuraname_list[_i]))"
+		}
+		_det = '⇒편도'
+		_class = 'one-way'
+		if ayl_gn_from[_i] {
+			_det = '⇔상호'
+			_class = 'round-trip'
+		}
+		_a_start = ''
+		_a_end = ''
+		if STRLEN(ayl_crafturl_list[_i]) {
+			_a_start = "<a href=%(_q)%(ayl_crafturl_list[_i])%(_q)>"
+			_a_end = '</a>'
+		}
+		
+		void FWRITE(_filename,"<tr><td class=%(_q)%(_class)%(_q)>%(_a_start)%(HTML이스케이프(_gnm))%(_a_end)</td><td class=%(_q)%(_class)%(_q)>%(_det)</td></tr>")
+	}
+	
+	void FWRITE(_filename,'</tbody></table>')
+	void FCLOSE(_filename)
+	
+	ERASEVAR('ayl_gn_list')
+	ERASEVAR('ayl_gn_from')
+	ERASEVAR('ayl_sakuraname_list')
+	ERASEVAR('ayl_crafturl_list')
+	
+	'\0완료.'
+}
+
+OnAYLXX_DEBUG_EXEC
+{
+	if _argc {
+		'\![open,inputbox,OnAYLXXInput_DEBUG_COMMAND,0,' + 이스케이프(_argv[0]) + ']'
+	}
+	else {
+		'\![open,inputbox,OnAYLXXInput_DEBUG_COMMAND,0]'
+	}
+}
+
+OnAYLXXInput_DEBUG_COMMAND
+{
+	if STRLEN(reference[0]) == 0 {
+		return
+	}
+	
+	SETLASTERROR(0)
+	_text = TOSTR(EVAL(reference[0]))
+	
+	if GETLASTERROR {
+		"\h\f[bold,true]ERROR:%(GETLASTERROR)\f[bold,default]\n"
+	}
+	--
+	'\_!' + _text + '\_!'
+	--
+	OnAYLXX_DEBUG_EXEC(reference[0])
+}
+
+AYL_OnMinuteChange
+{
+	_r = 누적기동시간
+	if 누적기동시간초기 != _r {
+		누적기동시간초기 = _r
+		
+		if ISFUNC('누적기동시간변화') {
+			_rs = EVAL('누적기동시간변화(_r)')
+			if _rs != '' {
+				_rs
+				return
+			}
+		}
+	}
+	
+	_t = GETTIME()
+	
+	if _t[5] == 0 {
+		if 오늘날짜 != _t[2] {
+			오늘날짜 = _t[2]
+			
+			_fname = OnGhostEventTranslate.AYL("일자변경%(_t[1])월%(_t[2])일")
+			if ISFUNC(_fname) {
+				_v = EVAL(_fname)
+				if STRLEN(_v) {
+					_v
+					return
+				}
+			}
+			
+			_fname = OnGhostEventTranslate.AYL("일자변경")
+			if ISFUNC(_fname) {
+				_v = EVAL(_fname)
+				if STRLEN(_v) {
+					_v
+					return
+				}
+			}
+			AYL_DateInit
+		}
+		
+		_fname = OnGhostEventTranslate.AYL("시보%(_t[1])월%(_t[2])일%(_t[4])시")
+		if ISFUNC(_fname) {
+			_v = EVAL(_fname)
+			if STRLEN(_v) {
+				_v
+				return
+			}
+		}
+		
+		_fname = OnGhostEventTranslate.AYL("시보%(_t[4])시")
+		if ISFUNC(_fname) {
+			_v = EVAL(_fname)
+			if STRLEN(_v) {
+				_v
+				return
+			}
+		}
+		
+		_fname = OnGhostEventTranslate.AYL("시보")
+		if ISFUNC(_fname) {
+			_v = EVAL(_fname)
+			if STRLEN(_v) {
+				_v
+				return
+			}
+		}
+	}
+	
+	_fname = 'OnMinuteChangeAYALILITH' + TOSTR(모드)
+	if ISFUNC(_fname) {
+		EVAL(_fname)
+		return
+	}
+}
+
+AYL_DateInit
+{
+	if GETTYPE(SHIORI3FW.UserBirthday) != 3 {
+		오늘은사용자생일 = 0
+		return
+	}
+	if STRLEN(SHIORI3FW.UserBirthday) == 0 {
+		오늘은사용자생일 = 0
+		return
+	}
+	
+	_a1 = GETTIME()
+	_d1 = JOIN(_a1[1],_a1[2],',')
+	
+	_a2 = SPLIT(SHIORI3FW.UserBirthday,',')
+	_d2 = JOIN(TOINT(_a2[1]),TOINT(_a2[2]),',')
+	
+	if _d1 == _d2 {
+		오늘은사용자생일 = 1
+	}
+	else {
+		오늘은사용자생일 = 0
+	}
+}
+
+/*----------------------------------------------------------------------------------
+	イベント振り分け
+----------------------------------------------------------------------------------*/
+
+OnGhostEventTranslate.AYL
+{
+	_fname = 'AYL_' + _argv[0]
+	if ISFUNC(_fname) {
+		_fname
+		return
+	}
+	
+	_fname = _argv[0] + TOSTR(모드)
+	if ISFUNC(_fname) {
+		_fname
+		return
+	}
+}
+
+AYL_OnChoiceSelect
+{
+	_fn = OnGhostEventTranslate.AYL(reference[0] + TOSTR(모드))
+	if ISFUNC(_fn) {
+		EVAL(_fn)
+		return
+	}
+	
+	_fn = OnGhostEventTranslate.AYL(reference[0])
+	if ISFUNC(_fn) {
+		EVAL(_fn)
+		return
+	}
+	
+	if SUBSTR(reference[0],0,6) == '|TEST|' {
+		TOSTR(EVAL(SUBSTR(reference[0],6,10000)))
+		return
+	}
+}
+
+AYL_OnAnchorSelect
+{
+	if RE_SEARCH(reference[0],'^(http|https)://') {
+		"\C\![open,browser,%(reference[0])]"
+		return
+	}
+
+	_fn = OnGhostEventTranslate.AYL('앵커' + reference[0] + TOSTR(모드))
+	if ISFUNC(_fn) {
+		EVAL(_fn)
+		return
+	}
+
+	_fn = OnGhostEventTranslate.AYL('앵커' + reference[0])
+	if ISFUNC(_fn) {
+		EVAL(_fn)
+		return
+	}
+
+	if ISFUNC(reference[0]) {
+		EVAL(reference[0])
+		return
+	}
+}
+
+AYLTimeoutCoreEx
+{
+	if STRLEN(SHIORI3FW.EventidOld) {
+		_fn = OnGhostEventTranslate.AYL(_argv[1] + SHIORI3FW.EventidOld + TOSTR(모드))
+		if ISFUNC(_fn) {
+			EVAL(_fn + '(reference[0])')
+			return
+		}
+		
+		_fn = OnGhostEventTranslate.AYL(_argv[0] + SHIORI3FW.EventidOld + TOSTR(모드))
+		if ISFUNC(_fn) {
+			EVAL(_fn + '(reference[0])')
+			return
+		}
+	}
+	
+	_a_evt = ASORT('string,ascending',GETFUNCLIST(_argv[1]))
+	foreach _a_evt ; _evt {
+		_r = EVAL(_evt)
+		if STRLEN(_r) {
+			_r
+			return
+		}
+	}
+	
+	_a_evt = ASORT('string,ascending',GETFUNCLIST(_argv[0]))
+	foreach _a_evt ; _evt {
+		_r = EVAL(_evt)
+		if STRLEN(_r) {
+			_r
+			return
+		}
+	}
+}
+
+AYL_OnChoiceTimeout
+{
+	AYLTimeoutCoreEx('OnChoiceTimeout','선택지타임오버')
+}
+AYL_OnBalloonTimeout
+{
+	AYLTimeoutCoreEx('OnBalloonTimeout','말풍선타임오버')
+}
+AYL_OnBalloonBreak
+{
+	AYLTimeoutCoreEx('OnBalloonBreak','말풍선중단')
+}
+AYL_OnSSTPBreak
+{
+	AYLTimeoutCoreEx('OnSSTPBreak','SSTP중단')
+}
+AYL_OnBalloonClose
+{
+	AYLTimeoutCoreEx('OnBalloonClose','말풍선닫음')
+}
+
+//***************************************************************************************************
+/*---------------------------------------------------------------------
+	코어
+---------------------------------------------------------------------*/
+DelayedTalkEval
+{
+	_txtarray = SPLIT(_argv[0],C_CRLF)
+	_output = ''
+	
+	if GETTYPE(_txtarray) == 4 {
+		_n = ARRAYSIZE(_txtarray)
+		_inited = 0
+		for _i = 0 ; _i < _n ; _i++ {
+			if _inited {
+				_output += C_CRLF
+			}
+			_inited = 1
+			_output += EVAL(CHR(0x22) + REPLACE(_txtarray[_i],CHR(0x22),'%(CHR(0x22))') + CHR(0x22))
+		}
+	}
+	else {
+		_output += EVAL(CHR(0x22) + REPLACE(_argv[0],CHR(0x22),'%(CHR(0x22))') + CHR(0x22))
+	}
+	
+	TOSTR(_output)
+}
+
+GetCurrentEto
+{
+	_e = ('자','축','인','묘','진','사','오','미','신','유','술','해')
+	_y = GETTIME()[0]
+	_e[(_y+8) % 12]
+}
+
+GetEvalTalkArray
+{
+	_t = GETTIME()
+	_y = _t[0]
+	_m = _t[1]
+	_d = _t[2]
+	_ms = GetMonthSlot
+	_holiday = GetHolidaySlot
+	_dayofweek = GetDOWSlot
+	
+	_season = GetSeasonSlot
+	_time = GetTimeSlotList
+
+	_slots = IARRAY
+	
+	//일반적인 대충 적는 형식
+	if _argc == 0 || _argv[0] == 0 {
+		//아침,낮,저녁,밤,한밤중etc...
+		_slots ,= _time
+		//몇 시
+		_slots ,= "%(GETTIME[4])시"
+		//봄,여름,가을,겨울
+		_slots ,= _season
+		//「봄의아침」
+		_slots ,= "%(_season)의%(_time)"
+		//「아침식사」「점심식사」「저녁식사」
+		_slots ,= GetMesiSlot
+		//?월
+		_slots ,= "%(_m)월"
+		//?월상순,중순,하순
+		_slots ,= "%(_m)월 %(GetDaySlot)"
+		//일요일,월요일...
+		_slots ,= "%(_dayofweek)요일"
+		//?째주일요일,월요일...
+		_slots ,= "%(((_d - 1) / 7) + 1)째주%(_dayofweek)요일"
+		//행사
+		_slots ,= _ms
+		//행사?요일
+		_slots ,= "%(_ms)%(_dayofweek)요일"
+		//평일휴일
+		_slots ,= _holiday
+		//행사/평일휴일
+		_slots ,= "%(_ms)%(_holiday)"
+		//계절/상태
+		_slots ,= "%(_season)의(_holiday)"
+		//「평일의아침」
+		_slots ,= "%(_holiday)의%(_time)"
+		//고스트 자신의 상태
+		_slots ,= '쉘' + SHIORI3FW.ShellName
+		_slots ,= '말풍선' + SHIORI3FW.BalloonName
+		_slots ,= 갈아입히기유효파츠리스트EX
+		_slots ,= 갈아입히기유효카테고리리스트EX
+		//그 외
+		if ISFUNC('아야리리스_특정일이벤트사용자설정') {
+			_slots ,= EVAL('아야리리스_특정일이벤트사용자설정')
+		}
+	}
+	
+	//특정한 날짜 처리는 특별
+	if _argc == 0 || _argv[0] == 1 {
+		//생일
+		if 오늘은사용자생일 {
+			_slots ,= '사용자생일'
+		}
+		//?월?일
+		_slots ,= "%(GetCurrentEto())년%(_m)월%(_d)일"
+		_slots ,= "%(_y)년%(_m)월%(_d)일"
+		_slots ,= "%(_m)월%(_d)일"
+		//?월 ?째주 일요일,월요일...
+		_slots ,= "%(_m)월%(((_d - 1) / 7) + 1)째주%(_dayofweek)요일"
+	}
+	
+	_slots
+}
+
+TalkEval
+{
+	//처리용! 만지지 말 것!!
+	_argv[0] = OnGhostEventTranslate.AYL(_argv[0])
+	
+	if ISFUNC(_argv[0]) {
+		_var = EVAL(_argv[0])
+		_type = GETTYPE(_var)
+		if _type == 4 {
+			_var
+		}
+		elseif _type == 0 {
+			IARRAY
+		}
+		else {
+			CVSTR(_var)
+			if STRLEN(_var) {
+				(_var,IARRAY)
+			}
+			else {
+				IARRAY
+			}
+		}
+	}
+	else {
+		IARRAY
+	}
+}
+
+GetBootSharedScript
+{
+	MouseEventTimeReset
+	
+	_s = ''
+	
+	_a = GETFUNCLIST('기동공통스크립트')
+	foreach _a;_f {
+		_s += EVAL(_f)
+	}
+	
+	_s
+}
+
+GetCloseSharedScript
+{
+	_s = ''
+	
+	_a = GETFUNCLIST('종료공통스크립트')
+	foreach _a;_f {
+		_s += EVAL(_f)
+	}
+	
+	_s
+}
+
+//***************************************************************************************************
+/*---------------------------------------------------------------------
+	랜덤 토크 처리
+	원래 있던 RandomTalk는 지울 것
+---------------------------------------------------------------------*/
+
+/*=====작성 예   ============================
+랜덤토크3월 : array
+{
+	'어쩌구저쩌구'
+}
+
+1.반드시 : array 을 마지막에 붙일 것!
+2.' '으로 토크를 감쌀 것! " " 가 아님!
+=============================================*/
+
+RandomTalk
+{
+	//고속 랜덤토크처리용
+	DelayedTalkEval(RandomTalkEx())
+}
+
+GetSeasonSlot
+{
+	//3-5,6-8,9-11,12-2……으로 하면 되겠지?
+	_m = month
+	if _m >= 3 && _m <= 5 { '봄' }
+	elseif _m >= 6 && _m <= 8 { '여름' }
+	elseif _m >= 9 && _m <= 11 { '가을' }
+	else { '겨울' }
+}
+
+GetDaySlot
+{
+	//10일,20일로 구분해 봤음
+	_d = day
+	if _d <= 10 { '초순' }
+	elseif _d <= 20 { '중순' }
+	else { '하순' }
+}
+
+GetTimeSlotList
+{
+	if ISFUNC('아야리리스_시간대설정') {
+		EVAL('아야리리스_시간대설정')
+		return
+	}
+	
+	//대충대충 시간 설정
+	switch hour {
+		'밤' //0시
+		'새벽' //1시
+		'새벽' //2시
+		'새벽' //3시
+		'새벽' //4시
+		'새벽' //5시
+		'아침' //6시
+		'아침' //7시
+		'아침' //8시
+		'아침' //9시
+		'아침' //10시
+		'낮' //11시
+		'낮' //12시
+		'낮' //13시
+		'낮' //14시
+		'낮' //15시
+		'해질녘' //16시
+		'해질녘' //17시
+		'저녁' //18시
+		'저녁' //19시
+		'저녁' //20시
+		'밤' //21시
+		'밤' //22시
+		'밤' //23시
+	}
+}
+
+GetMesiSlot
+{
+	_h = hour
+	if _h == 7 || _h == 8 {
+		'아침시간'
+	}
+	elseif _h == 12 || _h == 13 {
+		'점심시간'
+	}
+	elseif _h == 18 || _h == 19 {
+		'저녁시간'
+	}
+	else {
+		IARRAY
+	}
+}
+
+GetDOWSlot
+{
+	//요일
+	switch GETTIME[3] {
+		'일'
+		'월'
+		'화'
+		'수'
+		'목'
+		'금'
+		'토'
+	}
+}
+
+GetHolidaySlot
+{
+	if ISFUNC('아야리리스_휴일설정') {
+		EVAL('아야리리스_휴일설정')
+		return
+	}
+	
+	//평일/휴일
+	switch GETTIME[3] {
+		'휴일'
+		'평일'
+		'평일'
+		'평일'
+		'평일'
+		'평일'
+		'휴일'
+	}
+}
+
+
+
+GetMonthSlot
+{
+	if ISFUNC('아야리리스_행사정의') {
+		EVAL('아야리리스_행사정의')
+		return
+	}
+	
+	//월을 대충대충
+	_月 = GETTIME[1]
+	_日 = GETTIME[2]
+	//_요일 = GetDOWSlot
+	//_n째주 = ((_日 - 1) / 7) + 1
+	
+	if _月 == 1 && _日 <= 3 { //정월은 특별
+		'정월'
+		return
+	}
+	if _月 == 12 && _日 == 24 { //크리스마스도...
+		'크리스마스'
+		return
+	}
+	if _月 == 12 && _日 == 25 { //역시...
+		'크리스마스'
+		return
+	}	
+	if _月 == 12 && _日 <= 31 || _日 >= 26 { //연말은 바쁘죠
+		'연말'
+		return
+	}	
+	//기본 설정은 출근
+	'출근'
+}
+
+키워드랜덤토크
+{
+	_key = TOSTR(_argv[0])
+	_talk = DelayedTalkEval(KeywordRandomTalkExec(_key))
+	_talk = REPLACE(_talk,_key,"\f[bold,true]%(_key)\f[bold,default]")
+	_talk
+}
+
+KeywordRandomTalkExec : nonoverlap
+{
+	_text = _argv[0]
+	_array = RandomTalkArray
+	_output = IARRAY
+	
+	foreach _array ; _script {
+		if _text _in_ _script {
+			_output ,= _script
+		}
+	}
+	
+	parallel _output
+}
+
+ClearRandomTalkArrayNewTalk : void
+{
+	last_new_talk_id_array = IARRAY
+	last_new_talk_array = IARRAY
+}
+
+RandomTalkArrayNewTalk
+{
+	_talknew_func = IARRAY
+	_talknew_func ,= '신규추가랜덤토크'
+	_earray = GetEvalTalkArray
+	_n = ARRAYSIZE(_earray)
+	for _i = 0 ; _i < _n ; _i++ {
+		_talknew_func ,= '신규추가랜덤토크' + _earray[_i]
+	}
+	
+	if ISVAR('last_new_talk_id_array') == 0 {
+		last_new_talk_id_array = IARRAY
+	}
+	if ISVAR('last_new_talk_array') == 0 {
+		last_new_talk_array = IARRAY
+	}
+	
+	_changed = 0
+	_n = ARRAYSIZE(_talknew_func)
+	for _i = 0 ; _i < _n ; _i++ {
+		_talknew = TalkEval(_talknew_func[_i])
+		
+		_tnum = ARRAYSIZE(_talknew)
+		if _tnum >= 2 { //1행째는 날짜
+			
+			_idx = RE_ASEARCH("^\Q%(_talknew_func[_i])\E,",last_new_talk_id_array)
+			_date = "%(_talknew_func[_i]),%(_talknew[0])"
+			
+			if _idx >= 0 {
+				if last_new_talk_id_array[_idx] != _date {
+					last_new_talk_array ,= _talknew[1,_tnum-1]
+					last_new_talk_id_array[_idx] = _date
+					_changed = 1
+				}
+			}
+			else {
+				last_new_talk_array ,= _talknew[1,_tnum-1]
+				last_new_talk_id_array ,= _date
+				_changed = 1
+			}
+		}
+	}
+	
+	if _changed {
+		last_new_talk_array = UNIQUE(last_new_talk_array)
+	}
+	
+	_n = ARRAYSIZE(last_new_talk_array)
+	if _n >= 1 {
+		_rand = RAND(_n)
+		last_new_talk_array[_rand]
+		last_new_talk_array[_rand] = IARRAY
+		return
+	}
+	RandomTalkArray
+}
+
+RandomTalkArray
+{
+	_talk = IARRAY
+	_talknew = TalkEval('신규추가랜덤토크')
+	_n = ARRAYSIZE(_talknew)
+	if _n >= 2 { //1행째는 날짜
+		_talk ,= _talknew[1,65535] //우선도 높은 토크가 끝나면 섞는다
+	}
+	
+	//커스텀
+	_talk ,= TalkEval('랜덤토크커스텀')
+	
+	//계절 그 외
+	_earray = GetEvalTalkArray
+	_n = ARRAYSIZE(_earray)
+	for _i = 0 ; _i < _n ; _i++ {
+		_talknew = TalkEval('신규추가랜덤토크' + _earray[_i])
+		_tnum = ARRAYSIZE(_talknew)
+		if _tnum >= 2 { //1행째는 날짜
+			_talk ,= _talknew[1,_tnum-1] //우선도 높은 토크가 끝나면 섞는다
+		}
+		
+		_talk ,= TalkEval('랜덤토크' + _earray[_i])
+	}
+
+	//그리고 이것이 보통
+	_talk ,= TalkEval('랜덤토크일반')
+	
+	_talk
+}
+
+RandomTalkEx : nonoverlap
+{
+	parallel RandomTalkArrayNewTalk
+}
+
+//***************************************************************************************************
+/*----------------------------------------------------------------------------------
+	고스트 변경편
+----------------------------------------------------------------------------------*/
+
+/*===================================================================================
+작성 방법
+
+함수명 예제는 다음과 같습니다.
+
+(이름)에서바뀜
+(이름)으로바꾸기
+(이름)을를불러내기
+(이름)을를불러내기완료
+(이름)에게불림
+(이름)이가종료
+
+(이름) 부분에는 고스트의 Sakura（메인、\0）쪽 이름, 또는 풀네임이 들어갑니다.
+사쿠라나 검은 사쿠라 등 Sakura 이름 만으로는 판별할 수 없을 경우에 풀네임을 써 주세요.
++나 - , "나 ' 같은 AYA의 시스템에서 사용되는 문자는 모두 _ 으로 치환됩니다.
+
+AYA의 제한을 피하기 위해서 숫자로 시작하는 고스트 이름은 「＊（고스트 이름）」으로 써 주세요.
+예：＊54을를불러내기
+
+작성 예.
+스크립트는 " "로 둘러싸 주세요.
+
+Emily으로바꾸기
+{
+	"\u\s[10]\h\s[5]Emily로 교대~"
+}
+
+===================================================================================*/
+
+TranslateSystemChar
+{
+	SHIORI3FW.TranslateSystemChar(_argv[0],'_')
+}
+
+사쿠라스크립트제거
+{
+	SHIORI3FW.RemoveAllTags(_argv[0])
+}
+
+사쿠라스크립트무효화
+{
+	SHIORI3FW.EscapeAllTags(_argv[0])
+}
+
+GhostEventSearch
+{
+	_funcname = OnGhostEventTranslate.AYL(_argv[0])
+	if STRLEN(_funcname) {
+		_funcname
+		return
+	}
+	_funcname = OnGhostEventTranslate.AYL('＊' + _argv[0])
+	if STRLEN(_funcname) {
+		_funcname
+		return
+	}
+	''
+}
+
+CallChangeFuncWrapper
+{
+	_r0 = reference[0]
+	_r2 = reference[2]
+	
+	reference[0] = 사쿠라스크립트무효화(_r0)
+	reference[2] = 사쿠라스크립트무효화(_r2)
+	
+	TOSTR(EVAL(_argv[0]))
+	
+	reference[0] = _r0
+	reference[2] = _r2
+}
+
+CallChangeFunc
+{
+	//풀네임으로 검색
+	if reference[2] && STRLEN(TOSTR(reference[2])) {
+		_ghostname = TranslateSystemChar(reference[2])
+		_funcname = GhostEventSearch(_ghostname + _argv[0])
+		
+		if STRLEN(_funcname) {
+			_script = CallChangeFuncWrapper(_funcname)
+			if STRLEN(_script) {
+				_script
+				return
+			}
+		}
+	}
+
+	//Sakura 이름으로 검색
+	_ghostname = TranslateSystemChar(reference[0])
+	_funcname = GhostEventSearch(_ghostname + _argv[0])
+	
+	if STRLEN(_funcname) {
+		_script = CallChangeFuncWrapper(_funcname)
+		if STRLEN(_script) {
+			_script
+			return
+		}
+	}
+	
+	//고스트이름변환
+	if ISFUNC('고스트이름변환') {
+		_ghostname = EVAL('고스트이름변환(TOSTR(reference[0]))')
+		_funcname = GhostEventSearch(_ghostname + _argv[0])
+		
+		if STRLEN(_funcname) {
+			_script = CallChangeFuncWrapper(_funcname)
+			if STRLEN(_script) {
+				_script
+				return
+			}
+		}
+	}
+	
+	//자신인가 아닌가
+	if TOINT(_argv[1]) == 0 {
+		if reference[0] == selfname {
+			_funcname = GhostEventSearch('자신' + _argv[0])
+			
+			if STRLEN(_funcname) {
+				_script = CallChangeFuncWrapper(_funcname)
+				if STRLEN(_script) {
+					_script
+					return
+				}
+			}
+		}
+		
+		//범용 교대
+		_funcname = OnGhostEventTranslate.AYL('그외' + _argv[0])
+		if ISFUNC(_funcname) {
+			_script = CallChangeFuncWrapper(_funcname)
+			if STRLEN(_script) {
+				_script
+				return
+			}
+		}
+		
+		_funcname = OnGhostEventTranslate.AYL('다른고스트' + _argv[0])
+		if ISFUNC(_funcname) {
+			_script = CallChangeFuncWrapper(_funcname)
+			if STRLEN(_script) {
+				_script
+				return
+			}
+		}
+	}
+
+}
+
+CallChangeFuncLastCatch
+{
+	REPLACE(CallChangeFuncWrapper(OnGhostEventTranslate.AYL(_argv[0])),'\-','')
+}
+
+AYL_OnGhostChanging
+{
+	GetCloseSharedScript
+	--
+	_boot = SpecialBootCloseTalk('종료')
+	if STRLEN(_boot) {
+		_boot
+		return
+	}
+	
+	_script = CallChangeFunc('으로바꾸기')
+	
+	if STRLEN(_script) == 0 {
+		_script = CallChangeFuncLastCatch('OnClose')
+	}
+	
+	_script = REPLACE(_script,'\e','')
+	if AYALilithEX {
+		_script = _script + CHR(0xd,0xa) + "\w9\w9\e"
+	}
+	else {
+		_script = _script + "\w9\w9\e"
+	}
+	_script
+	
+}
+
+AYL_OnGhostChanged
+{
+	_boot = SpecialBootCloseTalk('기동')
+	if STRLEN(_boot) {
+		_boot
+		return
+	}
+	
+	태그없는토크 = 사쿠라스크립트제거(reference[1])
+	
+	_script = GetBootSharedScript + CallChangeFunc('에서바뀜')
+	
+	if STRLEN(_script) == 0 {
+		_script = CallChangeFuncLastCatch('OnBoot')
+	}
+	
+	_script
+}
+
+AYL_OnGhostCalling
+{
+	_script = CallChangeFunc('을를불러내기')
+	
+	if TOINT(EVAL('불러내기반응으로바꾸기반응을가져다쓰기')) {
+		_script = CallChangeFunc('으로바꾸기',1)
+	}
+	
+	_script
+}
+
+AYL_OnGhostCalled
+{
+	_boot = SpecialBootCloseTalk('기동')
+	if STRLEN(_boot) {
+		_boot
+		return
+	}
+	
+	태그없는토크 = 사쿠라스크립트제거(reference[1])
+
+	_script = GetBootSharedScript + CallChangeFunc('에게불림')
+	
+	if TOINT(EVAL('불러내기반응으로바꾸기반응을가져다쓰기')) {
+		_script = GetBootSharedScript + CallChangeFunc('에서바뀜',1)
+	}
+	
+	if STRLEN(_script) == 0 {
+		_script = CallChangeFuncLastCatch('OnBoot')
+	}
+	
+	_script
+}
+
+AYL_OnGhostCallComplete
+{
+	태그없는토크 = 사쿠라스크립트제거(reference[1])
+
+	CallChangeFunc('을를불러내기완료')
+}
+
+AYL_OnOtherGhostClosed
+{
+	CallChangeFunc('이가종료')
+}
+
+AYL_OnShellChanging
+{
+	_r0 = reference[0]
+	reference[0] = 사쿠라스크립트무효화(_r0)
+	
+	_script = ''
+	if _r0 == SHIORI3FW.ShellName {
+		_funcname = OnGhostEventTranslate.AYL('쉘다시읽어오기전')
+		if STRLEN(_funcname) {
+			_script = TOSTR(EVAL(_funcname))
+		}
+	}
+	else {
+		_funcname = OnGhostEventTranslate.AYL('쉘' + reference[0] + '변경전')
+		if STRLEN(_funcname) {
+			_script = TOSTR(EVAL(_funcname))
+		}
+		else {
+			_funcname = OnGhostEventTranslate.AYL('쉘변경전')
+			if STRLEN(_funcname) {
+				_script = TOSTR(EVAL(_funcname))
+			}
+		}
+	}
+	
+	if _script != '' {
+		if AYALilithEX {
+			_script = _script + CHR(0xd,0xa) + "\w9\w9\e"
+		}
+		else {
+			_script = _script + "\w9\w9\e"
+		}
+	}
+	_script
+	
+	reference[0] = _r0
+}
+
+AYL_OnShellChanged
+{
+	_r0 = reference[0]
+	reference[0] = 사쿠라스크립트무효화(_r0)
+	
+	if SHIORI3FW.ShellName == SHIORI3FW.ShellNameOld {
+		_funcname = OnGhostEventTranslate.AYL('쉘다시읽어오기후')
+		if STRLEN(_funcname) {
+			TOSTR(EVAL(_funcname))
+		}
+	}
+	else {
+		_funcname = OnGhostEventTranslate.AYL('쉘' + reference[0] + '변경후')
+		if STRLEN(_funcname) {
+			TOSTR(EVAL(_funcname))
+		}
+		else {
+			_funcname = OnGhostEventTranslate.AYL('쉘변경후')
+			if STRLEN(_funcname) {
+				TOSTR(EVAL(_funcname))
+			}
+		}
+	}
+	
+	reference[0] = _r0
+}
+
+AYL_OnBalloonChange
+{
+	_r0 = reference[0]
+	reference[0] = 사쿠라스크립트무효화(_r0)
+	
+	if SHIORI3FW.BalloonName == SHIORI3FW.BalloonNameOld {
+		_funcname = OnGhostEventTranslate.AYL('말풍선다시읽어오기')
+		if STRLEN(_funcname) {
+			TOSTR(EVAL(_funcname))
+		}
+	}
+	else {
+		_funcname = OnGhostEventTranslate.AYL('말풍선' + reference[0] + '변경')
+		if STRLEN(_funcname) {
+			TOSTR(EVAL(_funcname))
+		}
+		else {
+			_funcname = OnGhostEventTranslate.AYL('말풍선변경')
+			if STRLEN(_funcname) {
+				TOSTR(EVAL(_funcname))
+			}
+		}
+	}
+}
+
+//***************************************************************************************************
+/*----------------------------------------------------------------------------------
+	기동편
+----------------------------------------------------------------------------------*/
+
+/*=====작성 방법==================================================================
+봄아침에기동 : array
+{
+	"ごにょごにょ"
+}
+
+1. 반드시 마지막에 : array 을 붙일 것
+2.' '으로 감쌀것
+
+3.AYA의 제한 상「7월5일에기동」와 같은 식으로 숫자로 시작하는 함수는 만들 수 없기 때문에
+  이런 때에는「기동7월5일」으로 써야함
+===================================================================================*/
+
+SpecialBootCloseTalk
+{
+	DelayedTalkEval(SpecialBootCloseTalkExec(_argv[0]))
+}
+
+SpecialBootCloseTalkExec
+{
+	_date = GETTIME[0] + '/' + GETTIME[1] + '/' + GETTIME[2]
+
+	if ISVAR("특수%(_argv[0])토크배열") == 0 {
+		void EVAL("특수%(_argv[0])토크배열 = IARRAY")
+	}
+	
+	_talk = (SpecialBootCloseTalkExecArray(_argv[0]),IARRAY)
+	_talk_size = ARRAYSIZE(_talk)
+	
+	if (_date != EVAL("특수%(_argv[0])토크실행일시")) || (_talk_size != EVAL("특수%(_argv[0])토크배열수")) {
+		void EVAL("특수%(_argv[0])토크배열 = _talk")
+		void EVAL("특수%(_argv[0])토크실행일시 = _date")
+		void EVAL("특수%(_argv[0])토크배열수 = _talk_size")
+	}
+	
+	_talk_x = EVAL("특수%(_argv[0])토크배열")
+	_n = ARRAYSIZE(_talk_x)
+	if _n {
+		_rand = RAND(_n)
+		_script = _talk_x[_rand]
+		void EVAL("특수%(_argv[0])토크배열[_rand] = IARRAY")
+		_script
+		return
+	}
+	''
+	return
+}
+
+SpecialBootCloseTalkExecArray
+{
+	//특수한 날짜 토크
+	_earray = GetEvalTalkArray(1)
+	_n = ARRAYSIZE(_earray)
+	_talk = IARRAY
+	
+	for _i = 0 ; _i < _n ; _i++ {
+		_talk_e = TalkEval(_argv[0] + _earray[_i])
+		if ARRAYSIZE(_talk_e) {
+			_talk ,= _talk_e
+		}
+	}
+	
+	_talk
+	return
+}
+
+AYL_OnBoot
+{
+	GetBootSharedScript
+	--
+	//고속 처리용
+	DelayedTalkEval(BootCloseEx('기동'))
+}
+
+AYL_OnFirstBoot
+{
+	GetBootSharedScript
+	--
+	//고속 처리용
+	if TOINT(reference[0]) != 0 {
+		_r = DelayedTalkEval(BootCloseEx('Vanish후초회기동'))
+		if _r == '' {
+			_r = DelayedTalkEval(BootCloseEx('초회기동'))
+		}
+		_r
+	}
+	else {
+		DelayedTalkEval(BootCloseEx('초회기동'))
+	}
+}
+
+BootCloseEx
+{
+	_talk = IARRAY
+	
+	//특수한 날짜 토크
+	_result = SpecialBootCloseTalkExec(_argv[0])
+	if STRLEN(_result) {
+		_result
+		return
+	}
+	
+	//커스텀
+	_talk = IARRAY
+	_talk ,= TalkEval(_argv[0] + '커스텀')
+	
+	//계절 그 외
+	_earray = GetEvalTalkArray(0)
+	_n = ARRAYSIZE(_earray)
+	for _i = 0 ; _i < _n ; _i++ {
+		if RE_SEARCH(_earray[_i],'^\d') == 0 {
+			_talk ,= TalkEval(_earray[_i] + '에' + _argv[0])
+		}
+		_talk ,= TalkEval(_argv[0] + _earray[_i])
+	}
+
+	//그리고 이것이 일반
+	//시간대별 토크가 없을 때에만 추가
+	if ARRAYSIZE(_talk) == 0 {
+		_talk ,= TalkEval(_argv[0])
+	}
+	
+	parallel _talk
+}
+
+/*----------------------------------------------------------------------------------
+	종료편
+	사용법은 기동편과 같음（단「～에종료」가 됩니다）
+----------------------------------------------------------------------------------*/
+
+AYL_OnClose
+{
+	GetCloseSharedScript
+	--
+	_script = BootCloseEx('종료')
+	if ! 종료안함 {
+		_script = REPLACE(_script,'\e','')
+		_script = REPLACE(_script,'\-','')
+		_script += '\w9\-'
+	}
+	
+	//고속 처리용
+	DelayedTalkEval(_script)
+}
+
+
+//***************************************************************************************************
+/*----------------------------------------------------------------------------------
+	마우스 반응편
+----------------------------------------------------------------------------------*/
+
+MouseEventTimeReset
+{
+	최종마우스이벤트분 = systemuptime / 1000
+}
+
+//---- OnMouseMove 이벤트 --------------------------------------------------------------
+MouseEventExecSub
+{
+	_fname = _argv[0] + TOSTR(reference[3]) + _argv[1]
+	_fname = OnGhostEventTranslate.AYL(_fname)
+	if ISFUNC(_fname) {
+		EVAL(_fname)
+		return
+	}
+
+	_fname = _argv[0] + HAN2ZEN(TOSTR(reference[3])) + _argv[1]
+	_fname = OnGhostEventTranslate.AYL(_fname)
+	if ISFUNC(_fname) {
+		EVAL(_fname)
+		return
+	}
+	
+	_fname = _argv[0] + TOSTR(reference[3])
+	_fname = OnGhostEventTranslate.AYL(_fname)
+	if ISFUNC(_fname) {
+		EVAL(_fname)
+		return
+	}
+
+	_fname = _argv[0] + HAN2ZEN(TOSTR(reference[3]))
+	_fname = OnGhostEventTranslate.AYL(_fname)
+	if ISFUNC(_fname) {
+		EVAL(_fname)
+		return
+	}
+	
+	-1
+}
+
+MouseEventExecFromEventName
+{
+	if '클릭' == _argv[0] {
+		0
+		return
+	}
+	if '더블클릭' == _argv[0] {
+		0
+		return
+	}
+	if '다중클릭' == _argv[0] {
+		0
+		return
+	}
+	if '빙글빙글' _in_ _argv[0] {
+		1
+		return
+	}
+	if '쓰다듬기' _in_ _argv[0] {
+		-1
+		return
+	}
+	if '드래그' _in_ _argv[0] {
+		-1
+		return
+	}
+	if '홀드' _in_ _argv[0] {
+		-1
+		return
+	}
+	-1
+	return
+}
+
+MouseEventExec
+{
+	_fname = ''
+	
+	_m = TOINT(reference[5])
+	
+	_head = ''
+	if _m == 1 {
+		_head = '오른쪽' + _argv[0]
+	}
+	elseif _m == 2 {
+		_head = '중간' + _argv[0]
+	}
+	else {
+		_head = _argv[0]
+	}
+	
+	_colname = reference[4]
+	if _argc >= 2 {
+		_colname = _argv[1]
+	}
+	
+	_col_id = MouseEventExecFromEventName(_head)
+	if _col_id >= 0 {
+		_col_id += TOINT(reference[3])*10
+		if ((GETTICKCOUNT() - mouseevent_time[_col_id]) < 3000) && (mouseevent_colname[_col_id] == _colname) {
+			mouseevent_count[_col_id] += 1
+		}
+		else {
+			mouseevent_colname[_col_id] = _colname
+			mouseevent_count[_col_id] = 1
+		}
+	}
+	
+	마우스이벤트연속횟수 = mouseevent_count[_col_id]
+	mouseevent_time[_col_id] = GETTICKCOUNT()
+
+	_result = -1
+	if 'talking' _in_ status {
+		_result = MouseEventExecSub('토크중' + _head,_colname)
+	}
+	if _result == -1 {
+		_result = MouseEventExecSub(_head,_colname)
+	}
+
+	if _result != -1 {
+		MouseEventTimeReset()
+		SHIORI3FW.ResetAITalkInterval()
+		_result
+		return
+	}
+}
+
+MouseMoveWheelFunc
+{
+	_side = TOINT(reference[3])
+	if _argv[0] {
+		_side += 10
+	}
+	
+	if strokeid[_side] == reference[4] {
+		if (GETTICKCOUNT - TOINT(stroketimer[_side])) > 1500 {
+			stroke[_side] = 1
+		}
+		stroketimer[_side] = GETTICKCOUNT
+		
+		_stroke = TOINT(stroke[_side])
+		_stroke += 1
+		stroke[_side] = _stroke
+		
+		if _stroke >= _argv[1] {
+			if 'talking' !_in_ status {
+				_s = MouseEventExec(_argv[2])
+				if STRLEN(_s) == 0 {
+					if _argc >= 4 {
+						_s = MouseEventExec(_argv[3])
+					}
+				}
+				_s
+				stroke[_side] = 1
+			}
+		}
+	}
+	else {
+		stroke[_side] = 1
+		stroketimer[_side] = GETTICKCOUNT
+		strokeid[_side] = reference[4]
+	}
+}
+
+AYL_OnMouseMove
+{
+	if ISFUNC('아야리리스_마우스쓰다듬기감도') {
+		MouseMoveWheelFunc(0,아야리리스_마우스쓰다듬기감도,'쓰다듬기')
+	}
+	else {
+		MouseMoveWheelFunc(0,40,'쓰다듬기')
+	}
+}
+
+AYL_OnMouseWheel
+{
+	_script = ''
+	_sensitivity = 4
+	if ISFUNC('아야리리스_마우스휠감도') {
+		_sensitivity = 아야리리스_마우스휠감도
+	}
+	
+	if reference[2] > 0 {
+		_script = MouseMoveWheelFunc(1,_sensitivity,'빙글빙글위','빙글빙글')
+	}
+	else {
+		_script = MouseMoveWheelFunc(1,_sensitivity,'빙글빙글아래','빙글빙글')
+	}
+	
+	if STRLEN(_script) {
+		_script
+		return
+	}
+	
+}
+
+AYL_OnMouseClick
+{
+	클릭연속횟수 = 1
+	MouseEventExec('클릭')
+}
+AYL_OnMouseClickEx
+{
+	클릭연속횟수 = 1
+	MouseEventExec('클릭')
+}
+
+AYL_OnMouseDoubleClick
+{
+	클릭연속횟수 = 2
+	MouseEventExec('더블클릭')
+}
+AYL_OnMouseDoubleClickEx
+{
+	클릭연속횟수 = 2
+	MouseEventExec('더블클릭')
+}
+
+AYL_OnMouseMultipleClick
+{
+	클릭연속횟수 = TOINT(reference[7])
+	MouseEventExec('다중클릭')
+}
+AYL_OnMouseMultipleClickEx
+{
+	클릭연속횟수 = TOINT(reference[7])
+	MouseEventExec('다중클릭')
+}
+
+AYL_OnMouseDragStart
+{
+	//홀드해제
+	if mousedown_exec_complete == 0 {
+		mousedown_reference_array = IARRAY
+		mousedown_time = -1
+	}
+
+	AYL_drag_start_col = reference[4]
+	MouseEventExec('드래그시작',AYL_drag_start_col)
+}
+
+AYL_MouseHoldEndExec
+{
+	if 'talking' _in_ status {
+		SHIORI3FW.SetDelayEvent('OnAYLMouseHoldEndExecDelay',2)
+	}
+	else {
+		OnAYLMouseHoldEndExecDelay()
+	}
+}
+
+OnAYLMouseHoldEndExecDelay
+{
+	reference = mousedown_reference_array
+	MouseEventExec('홀드종료')
+	
+	//홀드해제
+	mousedown_reference_array = IARRAY
+	mousedown_time = -1
+	mousedown_exec_complete = 0
+}
+
+AYL_OnMouseDragEnd
+{
+	if mousedown_exec_complete {
+		AYL_MouseHoldEndExec()
+	}
+	else {
+		MouseEventExec('드래그종료',AYL_drag_start_col)
+	}
+	void ERASEVAR('AYL_drag_start_col')
+}
+
+AYL_OnMouseDown
+{
+	if TOINT(reference[5]) == 0 {
+		//홀드 계측 개시
+		mousedown_reference_array = reference
+		mousedown_time = GETTICKCOUNT()
+		mousedown_exec_complete = 0
+	}
+}
+
+AYL_OnMouseUp
+{
+	if mousedown_exec_complete {
+		AYL_MouseHoldEndExec()
+	}
+	else {
+		//홀드해제
+		mousedown_reference_array = IARRAY
+		mousedown_time = -1
+	}
+}
+
+AYL_OnMouseGesture
+{
+	_name = ''
+	_is_end = 0
+	
+	case reference[5] {
+		when 'right_up' { _name = '오른쪽위'; }
+		when 'up' { _name = '위'; }
+		when 'left_up' { _name = '왼쪽위'; }
+		when 'left' { _name = '왼쪽'; }
+		when 'left_down' { _name = '왼쪽아래'; }
+		when 'down' { _name = '아래'; }
+		when 'right_down' { _name = '오른쪽아래'; }
+		when 'right' { _name = '오른쪽'; }
+		when 'circle.cw' { _name = '시계방향'; }
+		when 'circle.ccw' { _name = '반시계방향'; }
+		when 'end' {
+			_is_end = 1
+			_name = '종료'
+		}
+	}
+	
+	_postfix = ''
+	_garray = IARRAY
+	_is_start = 0
+	
+	if _is_end {
+		ERASEVAR('gesture_name_array')
+		ERASEVAR('gesture_circle_array')
+		ERASEVAR('gesture_init')
+		ERASEVAR('gesture_wheel_event_raised')
+	}
+	else {
+		if ISVAR('gesture_init') == 0 {
+			gesture_init = 1
+			gesture_wheel_event_raised = ''
+			_is_start = 1
+		}
+		if '돌리기' _in_ _name {
+			if ISVAR('gesture_circle_array') == 0 {
+				gesture_circle_array = IARRAY
+			}
+			gesture_circle_array ,= _name
+			_postfix = '회전'
+			_garray = gesture_circle_array
+		}
+		else {
+			if ISVAR('gesture_name_array') == 0 {
+				gesture_name_array = IARRAY
+			}
+			gesture_name_array ,= _name
+			_garray = gesture_name_array
+		}
+	}
+	
+	if _is_end {
+		_fname = "마우스제스쳐%(reference[0])%(reference[4])종료"
+		_fname = OnGhostEventTranslate.AYL(_fname)
+		if ISFUNC(_fname) {
+			EVAL(_fname)
+			MouseEventTimeReset
+			return
+		}
+		
+		_fname = "마우스제스쳐%(reference[0])종료"
+		_fname = OnGhostEventTranslate.AYL(_fname)
+		if ISFUNC(_fname) {
+			EVAL(_fname)
+			MouseEventTimeReset
+			return
+		}
+	}
+	else {
+		if _is_start {
+			_fname = "마우스제스쳐%(reference[0])%(reference[4])개시"
+			_fname = OnGhostEventTranslate.AYL(_fname)
+			if ISFUNC(_fname) {
+				EVAL(_fname)
+				MouseEventTimeReset
+			}
+			else {
+				_fname = "마우스제스쳐%(reference[0])개시"
+				_fname = OnGhostEventTranslate.AYL(_fname)
+				if ISFUNC(_fname) {
+					EVAL(_fname)
+					MouseEventTimeReset
+				}
+			}
+		}
+		
+		_fname = "마우스제스쳐%(_postfix)%(reference[0])%(reference[4])%(JOIN(_garray,'・'))"
+		_fname = OnGhostEventTranslate.AYL(_fname)
+		if ISFUNC(_fname) {
+			EVAL(_fname)
+			MouseEventTimeReset
+			return
+		}
+		
+		_fname = "마우스제스쳐%(_postfix)%(reference[0])%(reference[4])단발%(_name)"
+		_fname = OnGhostEventTranslate.AYL(_fname)
+		if ISFUNC(_fname) {
+			EVAL(_fname + '(_garray)')
+			MouseEventTimeReset
+			return
+		}
+		
+		_fname = "마우스제스쳐%(_postfix)%(reference[0])%(reference[4])"
+		_fname = OnGhostEventTranslate.AYL(_fname)
+		if ISFUNC(_fname) {
+			EVAL(_fname + '(_garray)')
+			MouseEventTimeReset
+			return
+		}
+		
+		_fname = "마우스제스쳐%(_postfix)%(reference[0])%(JOIN(_garray,'・'))"
+		_fname = OnGhostEventTranslate.AYL(_fname)
+		if ISFUNC(_fname) {
+			EVAL(_fname)
+			MouseEventTimeReset
+			return
+		}
+		
+		_fname = "마우스제스쳐%(_postfix)%(reference[0])단발%(_name)"
+		_fname = OnGhostEventTranslate.AYL(_fname)
+		if ISFUNC(_fname) {
+			EVAL(_fname)
+			MouseEventTimeReset
+			return
+		}
+		
+		_fname = "마우스제스쳐%(_postfix)%(reference[0])"
+		_fname = OnGhostEventTranslate.AYL(_fname)
+		if ISFUNC(_fname) {
+			EVAL(_fname + '(_garray)')
+			MouseEventTimeReset
+			return
+		}
+		
+		if TOINT(EVAL('마우스제스쳐에휠반응을가져다쓰기')) {
+			if '위' _in_ _name || '아래' _in_ _name {
+				if '위' _in_ _name {
+					_name = '위'
+				}
+				elseif '아래' _in_ _name {
+					_name = '아래'
+				}
+				
+				if _name !_in_ gesture_wheel_event_raised {
+					reference[3] = reference[0]
+					
+					_xy = SPLIT(referece[1],CHR(1))
+					reference[0] = _xy[0]
+					reference[1] = _xy[1]
+					
+					_script = ''
+					if _name == '위' {
+						reference[2] = '20'
+						_script = MouseEventExec('빙글빙글위')
+					}
+					else {
+						reference[2] = '-20'
+						_script = MouseEventExec('빙글빙글아래')
+					}
+					if STRLEN(_script) == 0 {
+						_script = MouseEventExec('빙글빙글')
+					}
+					if STRLEN(_script) {
+						_script
+						gesture_wheel_event_raised += _name
+						return
+					}
+				}
+			}
+		}
+	}
+}
+
+//***************************************************************************************************
+/*----------------------------------------------------------------------------------
+	플러그인
+----------------------------------------------------------------------------------*/
+
+AYL_On_installedplugin : void
+{
+	_n = ARRAYSIZE(reference)
+	installedplugin_name = IARRAY
+	installedplugin_id = IARRAY
+	
+	for _i = 0 ; _i < _n ; _i++ {
+		_a = SPLIT(reference[_i],CHR(1))
+		
+		installedplugin_name ,= _a[0]
+		installedplugin_id ,= _a[1]
+	}
+	
+	if ISFUNC('On_installedplugin') {
+		void EVAL('On_installedplugin')
+	}
+}
+
+플러그인존재
+{
+	if _argc == 0 {
+		0
+		return
+	}
+	
+	if ASEARCH(_argv[0],installedplugin_id) >= 0 {
+		1
+		return
+	}
+	if ASEARCH(_argv[0],installedplugin_name) >= 0 {
+		1
+		return
+	}
+	0
+}
+
+/*----------------------------------------------------------------------------------
+	알림
+----------------------------------------------------------------------------------*/
+정보_고스트이름 {
+	사쿠라스크립트무효화(SHIORI3FW.GhostName)
+}
+정보_캐릭터이름 {
+	_inf = (사쿠라스크립트무효화(sakuraname),사쿠라스크립트무효화(keroname))
+	_inf
+}
+정보_쉘이름 {
+	사쿠라스크립트무효화(SHIORI3FW.ShellName)
+}
+정보_말풍선이름 {
+	사쿠라스크립트무효화(SHIORI3FW.BalloonName)
+}
+정보_사용자이름 {
+	사쿠라스크립트무효화(SHIORI3FW.UserName)
+}
+정보_사용자생일 {
+	SHIORI3FW.UserBirthday
+}
+
+AYL_OnNotifyUserInfo : void
+{
+	if username == '' {
+		if 정보_사용자이름 == '' {
+			username = 이름입력초기
+		}
+		else {
+			username = 정보_사용자이름
+		}
+	}
+
+	if ISFUNC('SHIORI3EV.OnNotifyUserInfo') {
+		void EVAL('SHIORI3EV.OnNotifyUserInfo')
+	}
+	if ISFUNC('OnNotifyUserInfo') {
+		void EVAL('OnNotifyUserInfo')
+	}
+	
+	AYL_DateInit()
+}
+
+AYL_OnDisplayChange : void
+{
+	//---- 変数にディスプレイ解像度と色深度に関する情報を取得
+	//---- 使うかどうかは分からないがとりあえず保持しておく
+	정보_모니터색수 = reference[0]
+	정보_모니터폭   = reference[1]
+	정보_모니터높이 = reference[2]
+	
+	if ISFUNC('SHIORI3EV.OnDisplayChange') {
+		void EVAL('SHIORI3EV.OnDisplayChange')
+	}
+	if ISFUNC('OnDisplayChange') {
+		void EVAL('OnDisplayChange')
+	}
+}
+
+/*----------------------------------------------------------------------------------
+	링크 메뉴
+----------------------------------------------------------------------------------*/
+
+아야리리스_LinkMenuConvert
+{
+	_argc_copy = _argc
+	_argv_copy = _argv
+	
+	if _argc_copy == 1 { //개행 포함 텍스트
+		_argv_copy = SPLIT(_argv_copy[0],CHR(0xd,0xa))
+		if GETTYPE(_argv_copy) != 4 { //정말로 하나 뿐이었다!
+			_argv_copy = _argv
+		}
+		else {
+			_argc_copy = ARRAYSIZE(_argv_copy)
+		}
+	}
+	
+	_text = ''
+	_data = IARRAY
+	for _i = 0 ; _i < _argc_copy ; _i++ {
+	   _data = (RE_SPLIT(_argv_copy[_i],'[ \t]*\|[ \t]*'),'','') //ダミー
+	   _text += "%(_data[0])%(CHR(1))%(_data[1])%(CHR(1))%(_data[2])%(CHR(1))%(CHR(2))"
+	}
+	_text;
+}
+
+//---- 본체쪽 포털사이트 리스트 -----------------------------------------------------
+AYL_On_sakura.portalsites
+{
+	아야리리스_LinkMenuConvert(포털사이트())
+}
+
+//---- 본체쪽 추천사이트 리스트 -----------------------------------------------------
+AYL_On_sakura.recommendsites
+{
+	아야리리스_LinkMenuConvert(추천0())
+}
+
+//---- kero쪽 추천사이트 리스트 -----------------------------------------------------
+AYL_On_kero.recommendsites
+{
+	아야리리스_LinkMenuConvert(추천1())
+}
+
+AYL_OnRecommendsiteChoice
+{
+	_sitename = TranslateSystemChar(reference[0])
+	
+	if reference[3] == 'recommend' {
+		if TOINT(reference[4]) > 0 {
+			_fname = '추천' + TOINT(reference[4]) + _sitename
+			if ISFUNC(_fname) {
+				EVAL(_fname)
+				return
+			}
+		}
+		else {
+			_fname = '추천0' + _sitename
+			if ISFUNC(_fname) {
+				EVAL(_fname)
+				return
+			}
+		}
+	}
+	elseif reference[3] == 'portal' {
+		_fname = '포털사이트' + _sitename
+		if ISFUNC(_fname) {
+			EVAL(_fname)
+			return
+		}
+	}
+	else {
+		_fname = '추천0' + _sitename
+		if ISFUNC(_fname) {
+			EVAL(_fname)
+			return
+		}
+		_fname = '추천1' + _sitename
+		if ISFUNC(_fname) {
+			EVAL(_fname)
+			return
+		}
+		_fname = '포털사이트' + _sitename
+		if ISFUNC(_fname) {
+			EVAL(_fname)
+			return
+		}
+	}
+}
+
+//**** 툴팁 *****************************************************************
+AYL_On_tooltip
+{
+	_f = '쉘툴팁' + TOSTR(reference[3]) + reference[4]
+	if ISFUNC(_f) {
+		EVAL(_f)
+	}
+	
+	if ISFUNC('On_tooltip') {
+		EVAL('On_tooltip')
+	}
+}
+
+AYL_On_balloon_tooltip
+{
+	reference[0] = RE_REPLACE(reference[0],'[ 　]+$','')
+	_f = '말풍선툴팁' + reference[1]
+	if ISFUNC(_f) {
+		_v = EVAL(_f)
+		if STRLEN(_v) {
+			_v
+			return
+		}
+	}
+	
+	if RE_SEARCH(reference[1],'^(http|https)://') {
+		'[브라우저로 URL 열기]\n' + reference[1]
+		return
+	}
+	
+	if ISFUNC('On_balloon_tooltip') {
+		EVAL('On_balloon_tooltip')
+	}
+}
+
+/*----------------------------------------------------------------------------------
+	연속 기동 시간
+----------------------------------------------------------------------------------*/
+고스트기동시간
+{
+	ghostupmin_total()
+}
+
+
+//***************************************************************************************************
+/*----------------------------------------------------------------------------------
+	이름 입력 보조
+----------------------------------------------------------------------------------*/
+
+/*----------------------------------------------------------------------------------
+	이름입력기동('식별자') 로 입력 박스 열기
+	
+	실행 변수명 필요
+	＊는 식별자
+	
+	이름입력경칭　：경칭을 텍스트로 반환해 주세요
+	이름입력열기＊：입력 박스를 열 때의 스크립트
+	이름입력공백＊：입력값이 공백일 때
+	이름입력경칭＊：경칭을 붙인 채로 입력했을 때
+	이름입력종료＊：정상 종료
+----------------------------------------------------------------------------------*/
+
+이름입력기동
+{
+	이름입력식별 = _argv[0]
+	이름입력공백카운트 = 0
+	
+	_script = EVAL("이름입력열기%(이름입력식별)")
+	if TOINT(AYALilithEX) != 0 {
+		void EVAL('_script = ProcessSpecialSyntax(_script)')
+	}
+	_script += "\![open,inputbox,OnInputNameInXTNDAYL,0,%(이스케이프(경칭삭제(username)))]"
+	
+	_script
+}
+
+경칭삭제
+{
+	if _argv[0] == '' {
+		''
+	}
+	else {
+		RE_REPLACE(_argv[0],'(씨|님|군|오빠|언니|아빠|엄마|아버지|어머니|동생|선배|후배)$','')
+	}
+}
+경칭탐색
+{
+	if _argv[0] == '' {
+		0
+	}
+	else {
+		RE_GREP(_argv[0],'(씨|님|군|오빠|언니|아빠|엄마|아버지|어머니|동생|선배|후배)$')
+	}
+}
+이름입력경칭WRAP
+{
+	if ISFUNC('이름입력경칭') {
+		이름입력경칭
+	}
+	else {
+		'님'
+	}
+}
+이름입력초기WRAP
+{
+	if ISFUNC('이름입력초기') {
+		이름입력초기
+	}
+	elseif SHIORI3FW.UserName != '' {
+		SHIORI3FW.UserName
+	}
+	else {
+		'사용자'
+	}
+}
+이름입력초기명칭판정
+{
+	if username == 이름입력초기WRAP() {
+		1
+	}
+	else {
+		0
+	}
+}
+
+OnInputNameInXTNDAYL
+{
+	if 경칭삭제(reference[0]) == '' {
+		_open_input = 1
+		_script = ''
+		
+		이름입력공백카운트 += 1
+		if 이름입력공백카운트 <= 1 {
+			_script = EVAL("이름입력공백%(이름입력식별)")
+		}
+		else {
+			_script = EVAL("이름입력공백반복%(이름입력식별)")
+			if _script == '' {
+				_script = EVAL("이름입력공백%(이름입력식별)")
+			}
+			else {
+				_open_input = 0
+			}
+		}
+		if TOINT(AYALilithEX) != 0 {
+			void EVAL('_script = ProcessSpecialSyntax(_script)')
+		}
+		
+		if _open_input {
+			_script += "\![open,inputbox,OnInputNameInXTNDAYL,0,%(이스케이프(경칭삭제(username)))]"
+		}
+		else {
+			username = 이름입력초기WRAP()
+		}
+		
+		_script
+		return
+	}
+	
+	_kflag = 0
+	if ( 경칭탐색(reference[0]) ) {
+		if ( 경칭삭제(reference[0]) + 이름입력경칭WRAP() ) == reference[0] {
+			reference[0] = 경칭삭제(reference[0])
+		}
+		else {
+			_kflag = 1
+		}
+	}
+	
+	username_saved = 사쿠라스크립트무효화(reference[0])
+	username_new = 경칭삭제(username_saved) + 이름입력경칭WRAP()
+	
+	if username_saved == 이름입력초기WRAP() {
+		OnInputNameSpecialXTNDAYL
+		return
+	}
+	
+	if _kflag {
+		_script = EVAL("이름입력경칭%(이름입력식별)")
+		if TOINT(AYALilithEX) != 0 {
+			void EVAL('_script = ProcessSpecialSyntax(_script)')
+		}
+		_script += '\0\n\n[half]'
+		_script += 메뉴("%(username_saved)",'OnInputNameSpecialXTNDAYL')
+		_script += '\n'
+		_script += 메뉴("%(username_new)",'OnInputNameEndXTNDAYL')
+		
+		_script
+		return
+	}
+	
+	OnInputNameEndXTNDAYL
+}
+
+InputNameSharedXTNDAYL
+{
+	_script = EVAL("이름입력종료%(이름입력식별)")
+	if TOINT(AYALilithEX) != 0 {
+		void EVAL('_script = ProcessSpecialSyntax(_script)')
+	}
+	_script
+	
+	ERASEVAR('username_saved','username_new')
+	ERASEVAR('이름입력식별','이름입력공백카운트')
+}
+
+OnInputNameSpecialXTNDAYL
+{
+	username = username_saved
+	InputNameSharedXTNDAYL()
+}
+
+OnInputNameEndXTNDAYL
+{
+	username = username_new	
+	InputNameSharedXTNDAYL()
+}
+
+//*****************************************************
+// 갈아입기 기본 데이터 취득
+//*****************************************************
+
+AYL_OnNotifyDressupInfo : void
+{
+	갈아입히기유효파츠리스트 = IARRAY
+	갈아입히기유효파츠리스트EX = IARRAY
+	갈아입히기유효카테고리리스트 = IARRAY
+	갈아입히기유효카테고리리스트EX = IARRAY
+
+	갈아입히기정보 = reference
+	
+	_c1 = CHR(1)
+	_n = ARRAYSIZE(reference.raw)
+	
+	//캐릭터 ID [1] 카테고리명 [1] 파츠명 [1] 옵션 [1] 유효1/무효0 [1] 섬네일 패스
+	for _i = 0 ; _i < _n ; _i++ {
+		_v = SPLIT(reference.raw[_i],_c1)
+		
+		if TOINT(_v[4]) != 0 {
+			_p2 = _v[2]
+			_p = '갈아입히기파츠' + TranslateSystemChar(_p2)
+			_c2 = _v[1]
+			_c = '갈아입히기카테고리' + TranslateSystemChar(_c2)
+			
+			if ASEARCH(_p,갈아입히기유효파츠리스트EX) < 0 {
+				갈아입히기유효파츠리스트 ,= _p2
+				갈아입히기유효파츠리스트EX ,= _p
+			}
+			if ASEARCH(_c,갈아입히기유효카테고리리스트EX) < 0 {
+				갈아입히기유효카테고리리스트 ,= _c2
+				갈아입히기유효카테고리리스트EX ,= _c
+			}
+		}
+	}
+	
+	if ISFUNC('OnNotifyDressupInfo') {
+		void EVAL('OnNotifyDressupInfo')
+	}
+}
+
+//*****************************************************
+// 커뮤
+//*****************************************************
+
+//------------------------------------------------------------------------------
+// 이쪽에서 말 걸기
+//------------------------------------------------------------------------------
+다른이에게말걸기
+{
+	//먼저 말을 걸 상대를 정한다
+	_ghostname = AYF_GetRandomSakuraName()
+	
+	if STRLEN(_ghostname) == 0 {
+		if ISFUNC('말걸수없음') {
+			EVAL('말걸수없음')
+		}
+		return
+	}
+	
+	res_reference0 = _ghostname
+	
+	//함수 불러내기
+	_fname = '＊' + TranslateSystemChar(_ghostname) + '에게말걸기'
+	if ISFUNC(_fname) {
+		EVAL(_fname)
+		return
+	}
+	
+	_fname = TranslateSystemChar(_ghostname) + '에게말걸기'
+	if ISFUNC(_fname) {
+		EVAL(_fname)
+		return
+	}
+	
+	_fname = '그외의사람에게말걸기'
+	if ISFUNC(_fname) {
+		EVAL(_fname)
+		return
+	}
+	
+	RandomTalk
+}
+
+//말을 걸 상대를 랜덤으로 결정
+AYF_GetRandomSakuraName
+{
+	_ghostlist=IARRAY
+	//FMO가 사용 가능할 때에는 FMO에서 읽기
+	if ISFUNC('SHIORI3FW.RefreshFMOTable') {
+		SHIORI3FW.RefreshFMOTable
+		_ghostlist=SHIORI3FW.SakuraNameList
+	}else{
+		_ghostlist=ghostexlist
+	}
+	if ARRAYSIZE(_ghostlist)>0 {
+		ANY(_ghostlist)
+	}else{
+		''
+	}
+}
+
+//기동 중의 고스트 리스트 취득
+AYL_On_otherghostname
+{
+	// 현재 기동 중인 고스트 리스트를 작성
+	ghostexlist = reference
+}
+
+//------------------------------------------------------------------------------
+//OnCommunicateイベント
+//------------------------------------------------------------------------------
+AYL_OnCommunicate
+{
+	if ARRAYSIZE(reference) >= 4 {
+		if STRLEN(reference[3]) {
+			if reference[2] == 'ECHO/1.0' { //대본 커뮤니케이트(수신)
+				res_securitylevel = 'External'
+				res_reference[0] = reference[0]
+				
+				if STRLEN(marker) == 0 {
+					marker = "Communicate from %(reference[0])"
+				}
+				
+				reference[3]
+				return
+			}
+			elseif reference[2] == 'JPRadish' { //다이콘 커뮤니케이트(수신)
+				'＊' + TranslateSystemChar(reference[0]) + '大根コミュニケート(reference[3,100])'
+				return
+			}
+		}
+	}
+	
+	_fname = 'OnCommunicateAYALILITH' + TOSTR(모드)
+	if ISFUNC(_fname) {
+		EVAL(_fname)
+		return
+	}
+	
+	if (reference[0] == "user") || (reference[0] == "User") {
+		AYF_ComParseFunc('사용자')
+	}
+	else {
+		_r = AYF_ComParseFunc(reference[0])
+		if STRLEN(_r) == 0 {
+			_r = AYF_ComParseFunc('그외')
+		}
+		if STRLEN(_r) > 0 {
+			_r
+		}
+	}
+}
+
+AYF_ComParseFunc
+{
+	_fname = TranslateSystemChar(_argv[0])
+	_sname = _fname // 추가
+	_fname += '커뮤'
+	
+	_func_array = IARRAY
+	_func_array ,= GETFUNCLIST(_fname)
+	_func_array ,= GETFUNCLIST('＊' + _fname)
+	
+	_func_result = IARRAY
+	_ev_max = 0
+	
+	foreach _func_array ; _func {
+		if '해당없음' !_in_ _func {
+			_ev = AYF_ComSyntaxToAyaSyntaxEval(_func,_fname,reference[1])
+			if (GETTYPE(_ev) == 1) && (_ev > 0) {
+				if _ev_max < _ev {
+					_func_result = IARRAY
+					_ev_max = _ev
+				}
+				_func_result ,= _func
+			}
+		}
+	}
+	
+	if ARRAYSIZE(_func_result) > 0 {
+		EVAL(ANY(_func_result))
+	}
+	else {
+		_fname = _sname + '커뮤해당없음'
+		if ISFUNC(_fname) {
+			EVAL(_fname)
+		}
+	}
+}
+
+AYF_ComSyntaxToAyaSyntaxEval
+{
+	_str = _argv[0]
+	
+	//헤더 삭제
+	_str = REPLACE(_str,_argv[1],'')
+	_str = REPLACE(_str,'＊' + _argv[1],'')
+	
+	_result_and = 0
+	_arr_and = SPLIT(_str,'_and_') // 수정
+	
+	foreach _arr_and ; _and {
+		_arr_or = SPLIT(_and,'_or_') // 수정
+		
+		_result_or = 0
+		foreach _arr_or ; _or {
+			_or = REPLACE(_or, '_', ' ') // 함수명의 조건부분 _를 스페이스로 변환
+			if _or _in_ _argv[2] {
+				_result_or = 1
+				break
+			}
+		}
+		
+		if _result_or == 0 {
+			_result_and = 0
+			break
+		}
+		else {
+			_result_and += 1
+		}
+	}
+	
+	_result_and
+}
+

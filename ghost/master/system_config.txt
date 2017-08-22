@@ -1,0 +1,17 @@
+//------------------------------------------------------------------------------
+//시스템 사전
+//------------------------------------------------------------------------------
+dic, yaya_config.txt		// YAYA:설정 사전. 반드시 맨 처음에 지정할 것.
+
+dic, system/yaya_shiori3.dic, Shift_JIS	// YAYA:시스템 사전
+dic, system/yaya_optional.dic, Shift_JIS	// YAYA:옵션 기능들용 사전
+//dic, system/yaya_compatible.dic	// YAYA:AYA과거 호환용 사전
+
+//------------------------------------------------------------------------------
+//실행 로그
+//실행 로그를 ayame.log으로 기록합니다. 개발할 때에는 기록해 두는 편이 좋습니다.
+//------------------------------------------------------------------------------
+// log, ayame.log	
+ignoreiolog, ID: OnSecondChange //OnSecondChange 무시
+ignoreiolog, ID: OnMouse        //OnMouse계 무시
+msglang, english

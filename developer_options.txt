@@ -1,0 +1,7 @@
+.gitignore,nonar,noupdate
+.gitattributes,nonar,noupdate
+.git/,nonar,noupdate
+ghost\master\yaya_variable.cfg,nonar,noupdate
+ghost\master\profile\var.txt,nonar,noupdate
+ghost\master\profile\ghost.dat,nonar,noupdate
+ghost\master\profile\history.txt,nonar,noupdate

@@ -1,0 +1,4 @@
+charset,UTF-8
+type,ghost
+name,¿¡¹Ý½º
+directory,Evans
